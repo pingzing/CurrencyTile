@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CurrencyTile.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "CurrencyTile.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
