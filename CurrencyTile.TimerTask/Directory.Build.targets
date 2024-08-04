@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--Workaround to prevent WinAppSDK #3390 from happening (https://github.com/microsoft/WindowsAppSDK/issues/3390)
+  when using the WCT.-->
+  <Target Name="CsWinRTAuthoring_AddManagedDependencies" />
+</Project>

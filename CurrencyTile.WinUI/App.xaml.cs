@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -13,55 +14,86 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
+using Windows.ApplicationModel.Background;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CurrencyTile.WinUI
+namespace CurrencyTile.WinUI;
+
+/// <summary>
+/// Provides application-specific behavior to supplement the default Application class.
+/// </summary>
+public partial class App : Application
 {
+    private const string AppInstanceKey = "primary";
+
+    private Window _mainWindow;
+
     /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
+    /// Initializes the singleton application object.  This is the first line of authored code
+    /// executed, and as such is the logical equivalent of main() or WinMain().
     /// </summary>
-    public partial class App : Application
+    public App()
     {
-        private const string AppInstanceKey = "primary";
+        InitializeComponent();
+    }
 
-        private Window _mainWindow;
-
-        /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
-        /// </summary>
-        public App()
+    protected override async void OnLaunched(LaunchActivatedEventArgs _)
+    {
+        var runningInstance = AppInstance.FindOrRegisterForKey(AppInstanceKey);
+        if (!runningInstance.IsCurrent)
         {
-            InitializeComponent();
+            var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
+            await runningInstance.RedirectActivationToAsync(activationArgs);
+            Process.GetCurrentProcess().Kill();
+            return;
         }
 
-        protected override async void OnLaunched(LaunchActivatedEventArgs _)
+        AppInstance.GetCurrent().Activated += OnActivated;
+        _mainWindow = new MainWindow();
+        _mainWindow.Activate();
+
+        // Register background task if necessary
+        const string TimerTaskName = "UpdateTilesTask";
+
+        foreach (var task in BackgroundTaskRegistration.AllTasks)
         {
-            var runningInstance = AppInstance.FindOrRegisterForKey(AppInstanceKey);
-            if (!runningInstance.IsCurrent)
+            if (task.Value.Name == TimerTaskName)
             {
-                var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
-                await runningInstance.RedirectActivationToAsync(activationArgs);
-                Process.GetCurrentProcess().Kill();
+                task.Value.Completed += UpdateTilesTaskCompleted;
                 return;
             }
-
-            AppInstance.GetCurrent().Activated += OnActivated;
-            _mainWindow = new MainWindow();
-            _mainWindow.Activate();
         }
 
-        private void OnActivated(object sender, AppActivationArguments e)
+        var builder = new BackgroundTaskBuilder
         {
-            if (e.Data is Windows.ApplicationModel.Activation.LaunchActivatedEventArgs winArgs)
+            Name = TimerTaskName,
+            TaskEntryPoint = "CurrencyTile.TimerTask.UpdateTilesTask",
+            IsNetworkRequested = true
+        };
+        builder.SetTrigger(new TimeTrigger(60, oneShot: false));
+
+        var registration = builder.Register();
+        registration.Completed += UpdateTilesTaskCompleted;
+    }
+
+    private void UpdateTilesTaskCompleted(
+        BackgroundTaskRegistration sender,
+        BackgroundTaskCompletedEventArgs args
+    )
+    {
+        // TODO: Respond to background update happening while app is open
+    }
+
+    private void OnActivated(object sender, AppActivationArguments e)
+    {
+        if (e.Data is Windows.ApplicationModel.Activation.LaunchActivatedEventArgs winArgs)
+        {
+            if (winArgs.Arguments != "")
             {
-                if (winArgs.Arguments != "")
-                {
-                    // Launched via secondary tile, parse out its arguments and do stuff with it
-                    (_mainWindow as MainWindow)?.SetMessage($"Activated via: {winArgs.Arguments}");
-                }
+                // Launched via secondary tile, parse out its arguments and do stuff with it
+                (_mainWindow as MainWindow)?.SetMessage($"Activated via: {winArgs.Arguments}");
             }
         }
     }

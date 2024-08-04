@@ -34,9 +34,9 @@ namespace CurrencyTile.WinUI
         private async void myButton_Click(object sender, RoutedEventArgs e)
         {
             var secondaryTile = new SecondaryTile(
-                "tileId",
-                "CurrencyTile - Source Name",
-                "args passed to startup",
+                "CurrencyTile-VFFVX",
+                "VFFVX",
+                "CurrencyTile - VFFVX",
                 new Uri("ms-appx:///Assets/Square150x150Logo.png"),
                 TileSize.Default
             );
