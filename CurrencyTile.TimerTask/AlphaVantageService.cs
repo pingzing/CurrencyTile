@@ -18,7 +18,8 @@ namespace CurrencyTile.TimerTask
             if (apiKeyStream == null)
             {
                 throw new Exception(
-                    "Missing the api_key.txt file that's supposed to contain an API key in the background task project. Go create it!"
+                    "Missing the api_key.txt file that's supposed to contain an API key in the background task project. Go create it!\n"
+                        + "(It needs to be an embedded resource, btw!)"
                 );
             }
             using TextReader reader = new StreamReader(apiKeyStream);
@@ -54,9 +55,26 @@ namespace CurrencyTile.TimerTask
             return quoteWrapper.GlobalQuote;
         }
 
-        internal async Task GetExchangeRate(string fromCurrency, string toCurrency)
+        internal async Task<ExchangeRate?> GetExchangeRate(string fromCurrency, string toCurrency)
         {
-            throw new NotImplementedException();
+            var response = await _client.GetAsync(
+                $"query?function=CURRENCY_EXCHANGE_RATE&from_currency={fromCurrency}&to_currency={toCurrency}&apikey={_apiKey}"
+            );
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            ExchangeRateWrapper? erWrapper = JsonConvert.DeserializeObject<ExchangeRateWrapper>(
+                json
+            );
+            if (erWrapper == null)
+            {
+                return null;
+            }
+
+            return erWrapper.RealtimeCurrencyExchangeRate;
         }
     }
 }

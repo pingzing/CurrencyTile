@@ -19,6 +19,9 @@ public sealed class UpdateTilesTask : IBackgroundTask
     {
         var deferral = taskInstance.GetDeferral();
 
+        // TODO: instead of hardcoded updates, just get a list of all secondary tiles, and read their
+        // info from their args
+
         GlobalQuote? vffvxQuote = await GetGlobalQuote("VFFVX");
         if (vffvxQuote != null)
         {
@@ -31,6 +34,12 @@ public sealed class UpdateTilesTask : IBackgroundTask
             await UpdateTile("CurrencyTile - VGT", vgtQuote);
         }
 
+        ExchangeRate? ethToUsd = await GetExchangeRate("ETH", "USD");
+        if (ethToUsd != null)
+        {
+            // TODO: new UpdateTile overload that takes an exchange rate
+        }
+
         // Stuff the data into storage, so the foreground app can use it too, if it's open
         // use Windows.Storage.ApplicationData.Current because we're packaged, and can just stuff settings in there
 
@@ -40,6 +49,11 @@ public sealed class UpdateTilesTask : IBackgroundTask
     private Task<GlobalQuote?> GetGlobalQuote(string symbol)
     {
         return _apiService.GetGlobalQuote(symbol);
+    }
+
+    private Task<ExchangeRate?> GetExchangeRate(string fromCurrency, string toCurrency)
+    {
+        return _apiService.GetExchangeRate(fromCurrency, toCurrency);
     }
 
     private async Task UpdateTile(string tileId, GlobalQuote data)
