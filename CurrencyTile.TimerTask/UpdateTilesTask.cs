@@ -31,13 +31,13 @@ public sealed class UpdateTilesTask : IBackgroundTask
         GlobalQuote? vgtQuote = await GetGlobalQuote("VGT");
         if (vgtQuote != null)
         {
-            await UpdateTile("CurrencyTile - VGT", vgtQuote);
+            await UpdateTile("CurrencyTile-VGT", vgtQuote);
         }
 
         ExchangeRate? ethToUsd = await GetExchangeRate("ETH", "USD");
         if (ethToUsd != null)
         {
-            // TODO: new UpdateTile overload that takes an exchange rate
+            await UpdateTile("CurrencyTile-ETHtoUSD", ethToUsd);
         }
 
         // Stuff the data into storage, so the foreground app can use it too, if it's open
@@ -56,13 +56,33 @@ public sealed class UpdateTilesTask : IBackgroundTask
         return _apiService.GetExchangeRate(fromCurrency, toCurrency);
     }
 
-    private async Task UpdateTile(string tileId, GlobalQuote data)
+    private Task UpdateTile(string tileId, GlobalQuote quote) =>
+        UpdateTileShared(tileId, GenerateTileContent(quote));
+
+    private Task UpdateTile(string tileId, ExchangeRate rate) =>
+        UpdateTileShared(tileId, GenerateTileContent(rate));
+
+    private async Task UpdateTileShared(string tileId, TileContent tileContent)
     {
         if (!SecondaryTile.Exists(tileId))
         {
             // Tile don't exist, bail
             return;
         }
+
+        var updateManager = TileUpdateManager.CreateTileUpdaterForSecondaryTile(tileId);
+        updateManager.Update(new TileNotification(tileContent.GetXml()));
+
+        // Maybe: Update tile args by creating a SecondaryTile with the TileId constructor, setting its properties, then calling Update on it
+        var tile = new SecondaryTile(tileId);
+        // TODO: Make background color change to green if plus, red if minus
+        tile.VisualElements.BackgroundColor = Windows.UI.Color.FromArgb(255, 0, 255, 0);
+        tile.Arguments = "TODO: stuff some data here"; // limited to 2048 chars, text only. Should probably include: type, current price, identifier (symbol, currency pair)
+        await tile.UpdateAsync();
+    }
+
+    private TileContent GenerateTileContent(GlobalQuote quote)
+    {
         var tileContent = new TileContent
         {
             Visual = new TileVisual
@@ -87,19 +107,19 @@ public sealed class UpdateTilesTask : IBackgroundTask
                                             {
                                                 HintMaxLines = 1,
                                                 HintStyle = AdaptiveTextStyle.Header,
-                                                Text = data.Symbol
+                                                Text = quote.Symbol
                                             },
                                             new AdaptiveText
                                             {
                                                 HintMaxLines = 1,
                                                 HintStyle = AdaptiveTextStyle.SubheaderNumeral,
-                                                Text = data.Price
+                                                Text = quote.Price
                                             },
                                             new AdaptiveText
                                             {
                                                 HintMaxLines = 1,
                                                 HintStyle = AdaptiveTextStyle.TitleSubtle,
-                                                Text = data.Change
+                                                Text = quote.Change
                                             }
                                         }
                                     },
@@ -122,15 +142,38 @@ public sealed class UpdateTilesTask : IBackgroundTask
                 }
             }
         };
-        var updateManager = TileUpdateManager.CreateTileUpdaterForSecondaryTile(tileId);
 
-        updateManager.Update(new TileNotification(tileContent.GetXml()));
+        return tileContent;
+    }
 
-        // Maybe: Update tile args by creating a SecondaryTile with the TileId constructor, setting its properties, then calling Update on it
-        var tile = new SecondaryTile(tileId);
-        // TODO: Make background color change to green if plus, red if minus
-        tile.VisualElements.BackgroundColor = Windows.UI.Color.FromArgb(255, 0, 255, 0);
-        tile.Arguments = "most recent data?";
-        await tile.UpdateAsync();
+    private TileContent GenerateTileContent(ExchangeRate rate)
+    {
+        var tileContent = new TileContent
+        {
+            Visual = new TileVisual
+            {
+                TileMedium = new TileBinding
+                {
+                    Content = new TileBindingContentAdaptive
+                    {
+                        TextStacking = TileTextStacking.Top,
+                        Children =
+                        {
+                            new AdaptiveGroup
+                            {
+                                Children =
+                                {
+                                    new AdaptiveSubgroup
+                                    { /* TODO */
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        return tileContent;
     }
 }
