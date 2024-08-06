@@ -8,9 +8,9 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="8f9661a0-4c2d-4d53-8d47-47c8a4d65588"
+    Name="NeilApps.CurrencyTile-Dev"
     Publisher="CN=Neil McAlister"
-    Version="1.0.0.0" />
+    Version="0.1.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="8f9661a0-4c2d-4d53-8d47-47c8a4d65588" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

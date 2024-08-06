@@ -1,4 +1,5 @@
-﻿using CurrencyTile.TimerTask.Models;
+﻿using System.Diagnostics;
+using CurrencyTile.TimerTask.Models;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Windows.ApplicationModel.Background;
 using Windows.UI.Notifications;
@@ -8,11 +9,15 @@ namespace CurrencyTile.TimerTask;
 
 public sealed class UpdateTilesTask : IBackgroundTask
 {
-    private AlphaVantageService _apiService;
+    private IAlphaVantageService _apiService;
 
     public UpdateTilesTask()
     {
+#if DEBUG
+        _apiService = new DummyAlphaVantageService();
+#else
         _apiService = new AlphaVantageService();
+#endif
     }
 
     public async void Run(IBackgroundTaskInstance taskInstance)
@@ -21,6 +26,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
 
         // TODO: instead of hardcoded updates, just get a list of all secondary tiles, and read their
         // info from their args
+        var allTiles = await SecondaryTile.FindAllAsync();
 
         GlobalQuote? vffvxQuote = await GetGlobalQuote("VFFVX");
         if (vffvxQuote != null)
@@ -62,7 +68,16 @@ public sealed class UpdateTilesTask : IBackgroundTask
     private Task UpdateTile(string tileId, ExchangeRate rate) =>
         UpdateTileShared(tileId, GenerateTileContent(rate));
 
-    private async Task UpdateTileShared(string tileId, TileContent tileContent)
+    private enum Change
+    {
+        Positive,
+        Negative
+    };
+
+    private async Task UpdateTileShared(
+        string tileId,
+        (TileContent tileContent, Change changeDirection) updateInfo
+    )
     {
         if (!SecondaryTile.Exists(tileId))
         {
@@ -71,71 +86,92 @@ public sealed class UpdateTilesTask : IBackgroundTask
         }
 
         var updateManager = TileUpdateManager.CreateTileUpdaterForSecondaryTile(tileId);
-        updateManager.Update(new TileNotification(tileContent.GetXml()));
+        var xmlContent = updateInfo.tileContent.GetXml();
+        updateManager.Update(new TileNotification(xmlContent));
 
-        // Maybe: Update tile args by creating a SecondaryTile with the TileId constructor, setting its properties, then calling Update on it
         var tile = new SecondaryTile(tileId);
         // TODO: Make background color change to green if plus, red if minus
-        tile.VisualElements.BackgroundColor = Windows.UI.Color.FromArgb(255, 0, 255, 0);
+        if (updateInfo.changeDirection == Change.Positive)
+        {
+            tile.VisualElements.BackgroundColor = Windows.UI.Color.FromArgb(255, 0, 255, 0);
+        }
+        else
+        {
+            tile.VisualElements.BackgroundColor = Windows.UI.Color.FromArgb(255, 255, 0, 0);
+        }
         tile.Arguments = "TODO: stuff some data here"; // limited to 2048 chars, text only. Should probably include: type, current price, identifier (symbol, currency pair)
-        await tile.UpdateAsync();
+        bool updateSuccess = await tile.UpdateAsync();
+        Debug.WriteLine($"Updating ${tileId} result was: {updateSuccess}");
     }
 
-    private TileContent GenerateTileContent(GlobalQuote quote)
+    private const string DownArrow = "🠟"; // This is a unicode "Heavy Downwards Arrow large Equilateral Arrowhead" character
+    private const string UpArrow = "🠝"; // And likewise, this is a "Heavy Upwards Arrow Large Equilateral arrowhead" character
+
+    private (TileContent tileContent, Change changeDirection) GenerateTileContent(GlobalQuote quote)
     {
+        // Tiles have pretty limited space, especially after our up/down arrow character.
+        // We need to truncate their prices to fit, but prioritize the non-decimal part of the price
+        // So do some calculation to truncate the price strings appropriately
+        const int maxSmallDigits = 4; // Room for six characters. We'll always have an arrow and a decimal point, so four total.
+        const int maxMediumDeigits = 8; // Ditto here. Technically room for 10, but minus two for arrow + decimal.
+        decimal absolute = Math.Abs(quote.PriceDecimal);
+        int nonDecimalDigitCount =
+            absolute < 1 ? 0 : (int)(Math.Log10(decimal.ToDouble(absolute)) + 1);
+
+        string prefixArrow = quote.ChangeDecimal < 0 ? DownArrow : UpArrow;
+
+        int maxSmallDecimalDigits = Math.Max(0, maxSmallDigits - nonDecimalDigitCount);
+        string smallTilePrice =
+            $"{prefixArrow}{quote.PriceDecimal.ToString($"F{maxSmallDecimalDigits}")}";
+
+        int maxMediumDecimalDigits = Math.Max(0, maxMediumDeigits - nonDecimalDigitCount);
+        string mediumTilePrice =
+            $"{prefixArrow}{quote.PriceDecimal.ToString($"F{maxMediumDecimalDigits}")}";
+        // Technically, the medium tile's "change" line can hold an extra digit or two because it uses a smaller font size
+        // and might not have a leading negative sign... but, meh.
+
         var tileContent = new TileContent
         {
             Visual = new TileVisual
             {
-                TileMedium = new TileBinding
+                Branding = TileBranding.Name,
+                DisplayName = quote.LastestTradingDay.ToShortDateString(),
+                TileSmall = new TileBinding
                 {
                     Content = new TileBindingContentAdaptive
                     {
-                        TextStacking = TileTextStacking.Top,
                         Children =
                         {
-                            new AdaptiveGroup
+                            new AdaptiveText { Text = quote.Symbol },
+                            new AdaptiveText { Text = smallTilePrice },
+                        }
+                    }
+                },
+                TileMedium = new TileBinding
+                {
+                    Branding = TileBranding.Name,
+                    DisplayName = quote.LastestTradingDay.ToShortDateString(),
+                    Content = new TileBindingContentAdaptive
+                    {
+                        Children =
+                        {
+                            new AdaptiveText
                             {
-                                Children =
-                                {
-                                    new AdaptiveSubgroup
-                                    {
-                                        HintTextStacking = AdaptiveSubgroupTextStacking.Top,
-                                        Children =
-                                        {
-                                            new AdaptiveText
-                                            {
-                                                HintMaxLines = 1,
-                                                HintStyle = AdaptiveTextStyle.Header,
-                                                Text = quote.Symbol
-                                            },
-                                            new AdaptiveText
-                                            {
-                                                HintMaxLines = 1,
-                                                HintStyle = AdaptiveTextStyle.SubheaderNumeral,
-                                                Text = quote.Price
-                                            },
-                                            new AdaptiveText
-                                            {
-                                                HintMaxLines = 1,
-                                                HintStyle = AdaptiveTextStyle.TitleSubtle,
-                                                Text = quote.Change
-                                            }
-                                        }
-                                    },
-                                    new AdaptiveSubgroup
-                                    {
-                                        HintTextStacking = AdaptiveSubgroupTextStacking.Bottom,
-                                        Children =
-                                        {
-                                            new AdaptiveText
-                                            {
-                                                HintMaxLines = 1,
-                                                HintStyle = AdaptiveTextStyle.CaptionSubtle,
-                                            }
-                                        }
-                                    }
-                                }
+                                HintMaxLines = 1,
+                                HintStyle = AdaptiveTextStyle.Base,
+                                Text = quote.Symbol
+                            },
+                            new AdaptiveText
+                            {
+                                HintMaxLines = 1,
+                                HintStyle = AdaptiveTextStyle.Base,
+                                Text = mediumTilePrice
+                            },
+                            new AdaptiveText
+                            {
+                                HintMaxLines = 1,
+                                HintStyle = AdaptiveTextStyle.BodySubtle,
+                                Text = quote.Change
                             }
                         }
                     }
@@ -143,10 +179,10 @@ public sealed class UpdateTilesTask : IBackgroundTask
             }
         };
 
-        return tileContent;
+        return (tileContent, quote.ChangeDecimal < 0 ? Change.Negative : Change.Positive);
     }
 
-    private TileContent GenerateTileContent(ExchangeRate rate)
+    private (TileContent tileContent, Change changeDirection) GenerateTileContent(ExchangeRate rate)
     {
         var tileContent = new TileContent
         {
@@ -174,6 +210,6 @@ public sealed class UpdateTilesTask : IBackgroundTask
             }
         };
 
-        return tileContent;
+        return (tileContent, Change.Positive);
     }
 }

@@ -54,6 +54,8 @@ public partial class App : Application
         _mainWindow = new MainWindow();
         _mainWindow.Activate();
 
+        // TODO: Move this into some central BG task registry service so we can also register and store
+        // the ApplicationTrigger BG task that will also call the UpdateTilesTask.
         // Register background task if necessary
         const string TimerTaskName = "UpdateTilesTask";
 
@@ -72,7 +74,7 @@ public partial class App : Application
             TaskEntryPoint = "CurrencyTile.TimerTask.UpdateTilesTask",
             IsNetworkRequested = true
         };
-        builder.SetTrigger(new TimeTrigger(60, oneShot: false));
+        builder.SetTrigger(new TimeTrigger(180, oneShot: false));
 
         var registration = builder.Register();
         registration.Completed += UpdateTilesTaskCompleted;
@@ -90,7 +92,7 @@ public partial class App : Application
     {
         if (e.Data is Windows.ApplicationModel.Activation.LaunchActivatedEventArgs winArgs)
         {
-            if (winArgs.Arguments != "")
+            if (winArgs.TileActivatedInfo != null)
             {
                 // Launched via secondary tile, parse out its arguments and do stuff with it
                 (_mainWindow as MainWindow)?.SetMessage($"Activated via: {winArgs.Arguments}");

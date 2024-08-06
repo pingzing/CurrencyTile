@@ -38,6 +38,11 @@ internal class GlobalQuote
     internal string Price { get; set; } = null!;
 
     /// <summary>
+    /// Price in USD, but as a numeric value.
+    /// </summary>
+    internal decimal PriceDecimal => decimal.Parse(Price);
+
+    /// <summary>
     /// Price in USD, with no cents(?)
     /// </summary>
     [JsonProperty("06. volume")]
@@ -55,6 +60,11 @@ internal class GlobalQuote
     /// </summary>
     [JsonProperty("09. change")]
     internal string Change { get; set; } = null!;
+
+    /// <summary>
+    /// Change in decimal, but as a numeric value.
+    /// </summary>
+    internal decimal ChangeDecimal => decimal.Parse(Change);
 
     [JsonProperty("10. change percent")]
     internal string ChangePercent { get; set; } = null!;
