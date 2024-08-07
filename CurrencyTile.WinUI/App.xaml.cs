@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -15,6 +17,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
 using Windows.ApplicationModel.Background;
+using Windows.Win32;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -94,6 +97,19 @@ public partial class App : Application
         {
             if (winArgs.TileActivatedInfo != null)
             {
+                _mainWindow.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (_mainWindow.AppWindow.Presenter is OverlappedPresenter presenter)
+                    {
+                        presenter.Restore(true);
+                    }
+                });
+                // Gotta use Win32 SetForegroundWindow, becaue Window.Activate() uses SetActiveWindow,
+                // which won't do anything if the application itself isn't active.
+                // We want to Definitely Bring The Window To The Front, Dammit, and that's SetForegroundWindow's
+                // job.
+                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_mainWindow);
+                PInvoke.SetForegroundWindow(new Windows.Win32.Foundation.HWND(hWnd));
                 // Launched via secondary tile, parse out its arguments and do stuff with it
                 (_mainWindow as MainWindow)?.SetMessage($"Activated via: {winArgs.Arguments}");
             }

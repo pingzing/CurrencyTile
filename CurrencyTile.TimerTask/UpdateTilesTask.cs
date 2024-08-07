@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using CurrencyTile.Shared;
 using CurrencyTile.TimerTask.Models;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Windows.ApplicationModel.Background;
@@ -24,26 +25,30 @@ public sealed class UpdateTilesTask : IBackgroundTask
     {
         var deferral = taskInstance.GetDeferral();
 
-        // TODO: instead of hardcoded updates, just get a list of all secondary tiles, and read their
-        // info from their args
         var allTiles = await SecondaryTile.FindAllAsync();
 
-        GlobalQuote? vffvxQuote = await GetGlobalQuote("VFFVX");
-        if (vffvxQuote != null)
+        foreach (var tile in allTiles)
         {
-            await UpdateTile("CurrencyTile-VFFVX", vffvxQuote);
-        }
-
-        GlobalQuote? vgtQuote = await GetGlobalQuote("VGT");
-        if (vgtQuote != null)
-        {
-            await UpdateTile("CurrencyTile-VGT", vgtQuote);
-        }
-
-        ExchangeRate? ethToUsd = await GetExchangeRate("ETH", "USD");
-        if (ethToUsd != null)
-        {
-            await UpdateTile("CurrencyTile-ETHtoUSD", ethToUsd);
+            TileArgsData tileArgs = TileSerializer.DeserializeTileArgs(tile.Arguments);
+            if (tileArgs is TileArgsQuote quoteArgs)
+            {
+                GlobalQuote? quote = await GetGlobalQuote(quoteArgs.Symbol);
+                if (quote != null)
+                {
+                    await UpdateTile(tile.TileId, quote);
+                }
+            }
+            else if (tileArgs is TileArgsExchangeRate rateArgs)
+            {
+                ExchangeRate? currToCurr = await GetExchangeRate(
+                    rateArgs.FromCurrency,
+                    rateArgs.ToCurrency
+                );
+                if (currToCurr != null)
+                {
+                    await UpdateTile(tile.TileId, currToCurr);
+                }
+            }
         }
 
         // Stuff the data into storage, so the foreground app can use it too, if it's open
@@ -90,7 +95,6 @@ public sealed class UpdateTilesTask : IBackgroundTask
         updateManager.Update(new TileNotification(xmlContent));
 
         var tile = new SecondaryTile(tileId);
-        // TODO: Make background color change to green if plus, red if minus
         if (updateInfo.changeDirection == Change.Positive)
         {
             tile.VisualElements.BackgroundColor = Windows.UI.Color.FromArgb(255, 0, 255, 0);
@@ -99,7 +103,6 @@ public sealed class UpdateTilesTask : IBackgroundTask
         {
             tile.VisualElements.BackgroundColor = Windows.UI.Color.FromArgb(255, 255, 0, 0);
         }
-        tile.Arguments = "TODO: stuff some data here"; // limited to 2048 chars, text only. Should probably include: type, current price, identifier (symbol, currency pair)
         bool updateSuccess = await tile.UpdateAsync();
         Debug.WriteLine($"Updating ${tileId} result was: {updateSuccess}");
     }

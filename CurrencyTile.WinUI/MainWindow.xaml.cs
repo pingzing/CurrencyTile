@@ -1,21 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
+using CurrencyTile.Shared;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.ApplicationModel.Background;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.StartScreen;
-using static System.Net.WebRequestMethods;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -37,7 +23,7 @@ public sealed partial class MainWindow : Window
         var secondaryTile = new SecondaryTile(
             "CurrencyTile-VFFVX",
             "VFFVX",
-            "CurrencyTile - VFFVX",
+            TileSerializer.SerializeTileArgs(new TileArgsQuote(TileKind.Quote, "VFFVX")),
             new Uri("ms-appx:///Assets/Square150x150Logo.png"),
             TileSize.Default
         );

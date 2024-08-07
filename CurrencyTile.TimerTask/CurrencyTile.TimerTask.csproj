@@ -21,4 +21,8 @@
     <PackageReference Include="System.Drawing.Common" Version="4.7.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CurrencyTile.Shared\CurrencyTile.Shared.csproj" />
+  </ItemGroup>
+
 </Project>
