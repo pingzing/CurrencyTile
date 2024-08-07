@@ -4,7 +4,9 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # Project-specific
-CurrencyTile.TimerTask/api_key.txt
+CurrencyTile.TimerTask/api_key_alphavantage.txt
+CurrencyTile.TimerTask/api_key_finnhub.txt
+CurrencyTile.TimerTask/api_key_currencybeacon.txt
 
 # User-specific files
 *.rsuser

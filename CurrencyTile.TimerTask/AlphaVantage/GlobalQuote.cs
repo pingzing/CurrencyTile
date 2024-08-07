@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace CurrencyTile.TimerTask.Models;
+namespace CurrencyTile.TimerTask.AlphaVantage;
 
 internal class GlobalQuoteWrapper
 {
@@ -8,7 +8,7 @@ internal class GlobalQuoteWrapper
     internal GlobalQuote GlobalQuote { get; set; } = null!;
 }
 
-internal class GlobalQuote
+internal class GlobalQuote : IStockQuote
 {
     [JsonProperty("01. symbol")]
     internal string Symbol { get; set; } = null!;
@@ -49,7 +49,7 @@ internal class GlobalQuote
     internal string Volume { get; set; } = null!;
 
     [JsonProperty("07. latest trading day")]
-    internal DateOnly LastestTradingDay { get; set; }
+    internal DateOnly LatestTradingDay { get; set; }
 
     [JsonProperty("08. previous close")]
     internal string PreviousClose { get; set; } = null!;
@@ -68,4 +68,23 @@ internal class GlobalQuote
 
     [JsonProperty("10. change percent")]
     internal string ChangePercent { get; set; } = null!;
+
+    // Interface implementation.
+    decimal IStockQuote.CurrentPrice => PriceDecimal;
+
+    decimal IStockQuote.Change => ChangeDecimal;
+
+    decimal IStockQuote.ChangePercent => decimal.Parse(ChangePercent);
+
+    decimal IStockQuote.HighPrice => decimal.Parse(High);
+
+    decimal IStockQuote.LowPrice => decimal.Parse(Low);
+
+    decimal IStockQuote.OpenPrice => decimal.Parse(Open);
+
+    decimal IStockQuote.PreviousClose => decimal.Parse(PreviousClose);
+
+    DateTimeOffset IStockQuote.Timestamp => new(LatestTradingDay, TimeOnly.MinValue, TimeSpan.Zero);
+
+    string IStockQuote.Symbol => Symbol;
 }

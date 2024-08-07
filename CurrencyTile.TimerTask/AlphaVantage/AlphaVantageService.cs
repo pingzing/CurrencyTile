@@ -1,7 +1,6 @@
-﻿using CurrencyTile.TimerTask.Models;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace CurrencyTile.TimerTask;
+namespace CurrencyTile.TimerTask.AlphaVantage;
 
 internal interface IAlphaVantageService
 {
@@ -18,28 +17,10 @@ internal class AlphaVantageService : IAlphaVantageService
     {
         _client = new HttpClient();
         _client.BaseAddress = new Uri("https://www.alphavantage.co/");
-        Stream? apiKeyStream = typeof(AlphaVantageService).Assembly.GetManifestResourceStream(
-            "CurrencyTile.TimerTask.api_key.txt"
-        );
-        if (apiKeyStream == null)
-        {
-            throw new Exception(
-                "Missing the api_key.txt file that's supposed to contain an API key in the background task project. Go create it!\n"
-                    + "(It needs to be an embedded resource, btw!)"
-            );
-        }
-        using TextReader reader = new StreamReader(apiKeyStream);
-        string apiKey = reader.ReadToEnd();
-        if (String.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new Exception(
-                "API key read from the file is null, empty, or whitespace. Fix it!"
-            );
-        }
-        _apiKey = apiKey;
+
+        _apiKey = ApiKeys.LoadKey("api_key_alphavantage.txt");
     }
 
-    // TODO: Stub this and the one below to work around the TEENY TINY API limits that AlphaVantage imposes
     public async Task<GlobalQuote?> GetGlobalQuote(string symbol)
     {
         var response = await _client.GetAsync(

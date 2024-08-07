@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace CurrencyTile.TimerTask.Models;
+namespace CurrencyTile.TimerTask.AlphaVantage;
 
 internal class ExchangeRateWrapper
 {
