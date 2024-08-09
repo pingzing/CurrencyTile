@@ -77,7 +77,7 @@ public partial class App : Application
             TaskEntryPoint = "CurrencyTile.TimerTask.UpdateTilesTask",
             IsNetworkRequested = true
         };
-        builder.SetTrigger(new TimeTrigger(180, oneShot: false));
+        builder.SetTrigger(new TimeTrigger(60, oneShot: false));
 
         var registration = builder.Register();
         registration.Completed += UpdateTilesTaskCompleted;

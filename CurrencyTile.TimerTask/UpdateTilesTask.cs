@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using CurrencyTile.Shared;
-using CurrencyTile.TimerTask.AlphaVantage;
-using CurrencyTile.TimerTask.Finnhub;
+using CurrencyTile.TimerTask.CurrencyBeacon;
+using CurrencyTile.TimerTask.FinancialModelingPrep;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Windows.ApplicationModel.Background;
 using Windows.UI.Notifications;
@@ -11,14 +11,14 @@ namespace CurrencyTile.TimerTask;
 
 public sealed class UpdateTilesTask : IBackgroundTask
 {
-    private AlphaVantageService _alphavantageService;
-    private FinnhubService _finnhubService;
+    private FinancialModelingPrepService _fmpService;
+    private CurrencyBeaconService _currencyBeaconService;
 
     public UpdateTilesTask()
     {
         // TODO: Implement CurrencyBeacon API for exchange rates
-        _finnhubService = new FinnhubService();
-        _alphavantageService = new AlphaVantageService();
+        _fmpService = new FinancialModelingPrepService();
+        _currencyBeaconService = new CurrencyBeaconService();
     }
 
     public async void Run(IBackgroundTaskInstance taskInstance)
@@ -32,17 +32,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
             TileArgsData tileArgs = TileSerializer.DeserializeTileArgs(tile.Arguments);
             if (tileArgs is TileArgsQuote quoteArgs)
             {
-                IStockQuote? quote;
-                // Special-case for VFFVX, because FINNHUB DOESN'T HAVE IT
-                if (quoteArgs.Symbol == "VFFVX")
-                {
-                    quote = await _alphavantageService.GetGlobalQuote(quoteArgs.Symbol);
-                }
-                else
-                {
-                    quote = await _finnhubService.GetQuote(quoteArgs.Symbol);
-                }
-
+                IStockQuote? quote = await _fmpService.GetQuote(quoteArgs.Symbol);
                 if (quote != null)
                 {
                     await UpdateTile(tile.TileId, quote);
@@ -50,14 +40,14 @@ public sealed class UpdateTilesTask : IBackgroundTask
             }
             else if (tileArgs is TileArgsExchangeRate rateArgs)
             {
-                //ExchangeRate? currToCurr = await GetExchangeRate(
-                //    rateArgs.FromCurrency,
-                //    rateArgs.ToCurrency
-                //);
-                //if (currToCurr != null)
-                //{
-                //    await UpdateTile(tile.TileId, currToCurr);
-                //}
+                IExchangeRate? currToCurr = await _currencyBeaconService.GetExchangeRate(
+                    rateArgs.FromCurrency,
+                    rateArgs.ToCurrency
+                );
+                if (currToCurr != null)
+                {
+                    await UpdateTile(tile.TileId, currToCurr);
+                }
             }
         }
 
@@ -70,7 +60,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
     private Task UpdateTile(string tileId, IStockQuote quote) =>
         UpdateTileShared(tileId, GenerateTileContent(quote));
 
-    private Task UpdateTile(string tileId, ExchangeRate rate) =>
+    private Task UpdateTile(string tileId, IExchangeRate rate) =>
         UpdateTileShared(tileId, GenerateTileContent(rate));
 
     private enum Change
@@ -109,6 +99,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
 
     private const string DownArrow = "🠟"; // This is a unicode "Heavy Downwards Arrow large Equilateral Arrowhead" character
     private const string UpArrow = "🠝"; // And likewise, this is a "Heavy Upwards Arrow Large Equilateral arrowhead" character
+    const string RightArrow = "🠞"; // This is--you guessed it!--"Heavy Rightwards Arrow with Large Equilateral Arrowhead".
 
     private (TileContent tileContent, Change changeDirection) GenerateTileContent(IStockQuote quote)
     {
@@ -124,10 +115,12 @@ public sealed class UpdateTilesTask : IBackgroundTask
         string prefixArrow = quote.Change < 0 ? DownArrow : UpArrow;
 
         int maxSmallDecimalDigits = Math.Max(0, maxSmallDigits - nonDecimalDigitCount);
+        maxSmallDecimalDigits = Math.Min(maxSmallDecimalDigits, 2); // And cap it at 2, because more is hard to read
         string smallTilePrice =
             $"{prefixArrow}{quote.CurrentPrice.ToString($"F{maxSmallDecimalDigits}")}";
 
         int maxMediumDecimalDigits = Math.Max(0, maxMediumDeigits - nonDecimalDigitCount);
+        maxMediumDecimalDigits = Math.Min(maxMediumDecimalDigits, 2); // And cap it at 2, because more is hard to read
         string mediumTilePrice =
             $"{prefixArrow}{quote.CurrentPrice.ToString($"F{maxMediumDecimalDigits}")}";
         // Technically, the medium tile's "change" line can hold an extra digit or two because it uses a smaller font size
@@ -174,7 +167,9 @@ public sealed class UpdateTilesTask : IBackgroundTask
                             {
                                 HintMaxLines = 1,
                                 HintStyle = AdaptiveTextStyle.BodySubtle,
-                                Text = quote.Change.ToString($"F{maxMediumDecimalDigits}")
+                                // + 1 digit here because these numbers are usually smaller, and the extra
+                                // decimal digit is helpful
+                                Text = quote.Change.ToString($"F{maxMediumDecimalDigits + 1}")
                             }
                         }
                     }
@@ -185,27 +180,46 @@ public sealed class UpdateTilesTask : IBackgroundTask
         return (tileContent, quote.Change < 0 ? Change.Negative : Change.Positive);
     }
 
-    private (TileContent tileContent, Change changeDirection) GenerateTileContent(ExchangeRate rate)
+    private (TileContent tileContent, Change changeDirection) GenerateTileContent(
+        IExchangeRate rate
+    )
     {
         var tileContent = new TileContent
         {
             Visual = new TileVisual
             {
-                TileMedium = new TileBinding
+                Branding = TileBranding.Name,
+                DisplayName = rate.Timestamp.UtcDateTime.ToShortDateString(),
+                TileSmall = new TileBinding
                 {
                     Content = new TileBindingContentAdaptive
                     {
-                        TextStacking = TileTextStacking.Top,
                         Children =
                         {
-                            new AdaptiveGroup
+                            new AdaptiveText { Text = $"{rate.From}{rate.To}" },
+                            new AdaptiveText { Text = rate.Rate.ToString("F2") }
+                        }
+                    }
+                },
+                TileMedium = new TileBinding
+                {
+                    Branding = TileBranding.Name,
+                    DisplayName = rate.Timestamp.UtcDateTime.ToShortDateString(),
+                    Content = new TileBindingContentAdaptive
+                    {
+                        Children =
+                        {
+                            new AdaptiveText
                             {
-                                Children =
-                                {
-                                    new AdaptiveSubgroup
-                                    { /* TODO */
-                                    }
-                                }
+                                HintMaxLines = 1,
+                                HintStyle = AdaptiveTextStyle.Base,
+                                Text = $"{rate.From} {RightArrow} {rate.To}"
+                            },
+                            new AdaptiveText
+                            {
+                                HintMaxLines = 1,
+                                HintStyle = AdaptiveTextStyle.Base,
+                                Text = rate.Rate.ToString("F3")
                             }
                         }
                     }

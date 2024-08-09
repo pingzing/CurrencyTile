@@ -21,9 +21,9 @@ public sealed partial class MainWindow : Window
     private async void myButton_Click(object sender, RoutedEventArgs e)
     {
         var secondaryTile = new SecondaryTile(
-            "CurrencyTile-VGT",
-            "VGT",
-            TileSerializer.SerializeTileArgs(new TileArgsQuote(TileKind.Quote, "VGT")),
+            "CurrencyTile-ETHSUD",
+            "ETH to USD",
+            TileSerializer.SerializeTileArgs(new TileArgsExchangeRate("ETH", "USD")),
             new Uri("ms-appx:///Assets/Square150x150Logo.png"),
             TileSize.Default
         );

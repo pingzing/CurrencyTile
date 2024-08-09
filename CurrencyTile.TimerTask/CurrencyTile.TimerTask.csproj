@@ -10,12 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="api_key_alphavantage.txt" />
     <None Remove="api_key_currencybeacon.txt" />
-    <None Remove="api_key_finnhub.txt" />
-    <EmbeddedResource Include="api_key_alphavantage.txt" />
+    <None Remove="api_key_financialmodelingprep.txt" />
     <EmbeddedResource Include="api_key_currencybeacon.txt" />
-    <EmbeddedResource Include="api_key_finnhub.txt" />
+    <EmbeddedResource Include="api_key_financialmodelingprep.txt" />
   </ItemGroup>
 
   <ItemGroup>

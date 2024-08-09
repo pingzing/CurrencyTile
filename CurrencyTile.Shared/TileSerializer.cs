@@ -8,10 +8,10 @@ public enum TileKind
 
 public abstract record TileArgsData(TileKind Kind);
 
-public record TileArgsQuote(TileKind Kind, string Symbol) : TileArgsData(Kind);
+public record TileArgsQuote(string Symbol) : TileArgsData(TileKind.Quote);
 
-public record TileArgsExchangeRate(TileKind Kind, string FromCurrency, string ToCurrency)
-    : TileArgsData(Kind);
+public record TileArgsExchangeRate(string FromCurrency, string ToCurrency)
+    : TileArgsData(TileKind.ExchangeRate);
 
 public class TileSerializer
 {
@@ -47,11 +47,11 @@ public class TileSerializer
 
         if (kind == TileKind.Quote)
         {
-            return new TileArgsQuote(kind, parts[1]);
+            return new TileArgsQuote(parts[1]);
         }
         if (kind == TileKind.ExchangeRate)
         {
-            return new TileArgsExchangeRate(kind, parts[1], parts[2]);
+            return new TileArgsExchangeRate(parts[1], parts[2]);
         }
 
         throw new ArgumentOutOfRangeException(
