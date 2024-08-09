@@ -126,6 +126,8 @@ public sealed class UpdateTilesTask : IBackgroundTask
         // Technically, the medium tile's "change" line can hold an extra digit or two because it uses a smaller font size
         // and might not have a leading negative sign... but, meh.
 
+        string changePrefix = quote.Change > 0 ? "+" : string.Empty;
+
         var tileContent = new TileContent
         {
             Visual = new TileVisual
@@ -154,7 +156,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
                             new AdaptiveText
                             {
                                 HintMaxLines = 1,
-                                HintStyle = AdaptiveTextStyle.Base,
+                                HintStyle = AdaptiveTextStyle.Body,
                                 Text = quote.Symbol
                             },
                             new AdaptiveText
@@ -169,7 +171,8 @@ public sealed class UpdateTilesTask : IBackgroundTask
                                 HintStyle = AdaptiveTextStyle.BodySubtle,
                                 // + 1 digit here because these numbers are usually smaller, and the extra
                                 // decimal digit is helpful
-                                Text = quote.Change.ToString($"F{maxMediumDecimalDigits + 1}")
+                                Text =
+                                    $"{changePrefix}{quote.Change.ToString($"F{maxMediumDecimalDigits + 1}")}"
                             }
                         }
                     }
@@ -212,7 +215,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
                             new AdaptiveText
                             {
                                 HintMaxLines = 1,
-                                HintStyle = AdaptiveTextStyle.Base,
+                                HintStyle = AdaptiveTextStyle.Body,
                                 Text = $"{rate.From} {RightArrow} {rate.To}"
                             },
                             new AdaptiveText
