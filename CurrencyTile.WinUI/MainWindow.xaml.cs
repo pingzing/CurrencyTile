@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using CurrencyTile.Shared;
 using Microsoft.UI.Xaml;
 using Windows.UI.StartScreen;
@@ -11,11 +15,29 @@ namespace CurrencyTile.WinUI;
 /// <summary>
 /// An empty window that can be used on its own or navigated to within a Frame.
 /// </summary>
-public sealed partial class MainWindow : Window
+public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public List<string> TileComboBoxOptions { get; } = ["Quote", "ExchangeRate"];
+
+    //private ObservableCollection<TileArgsData> _tiles = new();
+    //public ObservableCollection<TileArgsData> Tiles
+    //{
+    //    get => _tiles;
+    //    set
+    //    {
+    //        if (_tiles != value)
+    //        {
+    //            _tiles = value;
+    //            RaisePropertyChanged();
+    //        }
+    //    }
+    //}
+
     public MainWindow()
     {
-        this.InitializeComponent();
+        InitializeComponent();
     }
 
     private async void myButton_Click(object sender, RoutedEventArgs e)
@@ -38,14 +60,30 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    public void SetMessage(string message)
+    public Visibility IsTileType(TileKind expected, object? comboBoxSelection)
     {
-        DispatcherQueue.TryEnqueue(
-            Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
-            () =>
-            {
-                MessageBlock.Text = message;
-            }
-        );
+        if (comboBoxSelection == null)
+        {
+            return Visibility.Collapsed;
+        }
+        string selectedItem = (string)comboBoxSelection;
+        TileKind given = selectedItem switch
+        {
+            "Quote" => TileKind.Quote,
+            "ExchangeRate" => TileKind.ExchangeRate,
+            _ => throw new NotImplementedException()
+        };
+
+        if (given != expected)
+        {
+            return Visibility.Collapsed;
+        }
+
+        return Visibility.Visible;
+    }
+
+    private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

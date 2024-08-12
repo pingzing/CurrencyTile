@@ -6,10 +6,58 @@
     xmlns:local="using:CurrencyTile.WinUI"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shared="using:CurrencyTile.Shared"
     mc:Ignorable="d">
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
-        <TextBlock x:Name="MessageBlock" Text="" />
-    </StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <StackPanel x:Name="AddTilePanel" Orientation="Vertical">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Text="Tile Type" Style="{StaticResource BaseTextBlockStyle}"/>
+                <ComboBox x:Name="TileTypeComboBox"            
+                          VerticalAlignment="Center"
+                          Margin="0 2 0 0"
+                          ItemsSource="{x:Bind TileComboBoxOptions, Mode=OneWay}"
+                          SelectedIndex="0"/>
+            </StackPanel>
+            
+            <StackPanel x:Name="QuotePanel" Orientation="Vertical" 
+                        Visibility="{x:Bind IsTileType(shared:TileKind.Quote, TileTypeComboBox.SelectedItem), Mode=OneWay}">
+                <TextBlock Text="Quote" Style="{StaticResource TitleTextBlockStyle}"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Quote:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
+                    <TextBox x:Name="QuoteSymbolTextBox" />
+                </StackPanel>
+                <Button x:Name="SubmitQuoteButton" Content="Submit" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+            
+            <StackPanel x:Name="ExchangeRatePanel" Orientation="Vertical"
+                        Visibility="{x:Bind IsTileType(shared:TileKind.ExchangeRate, TileTypeComboBox.SelectedItem), Mode=OneWay}">
+                <TextBlock Text="Exchange Rate" Style="{StaticResource TitleTextBlockStyle}"/>
+                <Grid RowSpacing="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="From currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
+                    <TextBox Grid.Column="1" x:Name="ExchangeRateFromBox"/>
+
+                    <TextBlock Grid.Row="1" Text="To currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ExchangeRateToBox" />
+                </Grid>
+                <Button x:Name="SubmitExchangeButton" Content="Submit" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+            
+        </StackPanel>
+        
+    </Grid>
 </Window>

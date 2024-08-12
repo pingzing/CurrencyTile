@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+﻿using Newtonsoft.Json;
 using Serilog;
 
 namespace CurrencyTile.TimerTask.FinancialModelingPrep;

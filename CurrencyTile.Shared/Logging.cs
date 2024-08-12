@@ -15,7 +15,7 @@ public class Logging
             return _logger;
         }
 
-        // Note: This won't work if the application every gets created in an unpackaged way.
+        // Note: This won't work if the application ever gets created in an unpackaged way.
         // Will have to use real paths then.
         var folder = ApplicationData.Current.LocalFolder;
         var file = await folder.CreateFileAsync("log.txt", CreationCollisionOption.OpenIfExists);

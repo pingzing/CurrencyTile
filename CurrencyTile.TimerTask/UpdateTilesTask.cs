@@ -23,7 +23,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
 
         if (!_initialized)
         {
-            _logger = await new Logging().GetLogger();
+            _logger = await new Shared.Logging().GetLogger();
             _fmpService = new FinancialModelingPrepService(_logger);
             _currencyBeaconService = new CurrencyBeaconService(_logger);
             _initialized = true;

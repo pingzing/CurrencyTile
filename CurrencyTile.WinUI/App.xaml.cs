@@ -34,7 +34,8 @@ public partial class App : Application
     private const string AppInstanceKey = "primary";
 
     private Window _mainWindow;
-    private ILogger _logger;
+    private ILogger _logger = null!;
+    private BackgroundTaskService _bgTaskService;
 
     /// <summary>
     /// Initializes the singleton application object.  This is the first line of authored code
@@ -43,6 +44,7 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+        _bgTaskService = new BackgroundTaskService();
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs _)
@@ -62,41 +64,11 @@ public partial class App : Application
         _mainWindow = new MainWindow();
         _mainWindow.Activate();
 
-        // TODO: Move this into some central BG task registry service so we can also register and store
-        // the ApplicationTrigger BG task that will also call the UpdateTilesTask.
-        // Register background task if necessary
-        const string TimerTaskName = "UpdateTilesTask";
-
-        foreach (var task in BackgroundTaskRegistration.AllTasks)
-        {
-            if (task.Value.Name == TimerTaskName)
-            {
-                task.Value.Completed += UpdateTilesTaskCompleted;
-                return;
-            }
-        }
-
-        var builder = new BackgroundTaskBuilder
-        {
-            Name = TimerTaskName,
-            TaskEntryPoint = "CurrencyTile.TimerTask.UpdateTilesTask",
-            IsNetworkRequested = true
-        };
-        builder.SetTrigger(new TimeTrigger(60, oneShot: false));
-
-        var registration = builder.Register();
-        registration.Completed += UpdateTilesTaskCompleted;
+        var timerTaskRegistration = await _bgTaskService.GetOrRegisterTimerTask();
+        var appTriggerTaskRegistration = await _bgTaskService.GetOrRegisterAppTriggerTask();
     }
 
-    private void UpdateTilesTaskCompleted(
-        BackgroundTaskRegistration sender,
-        BackgroundTaskCompletedEventArgs args
-    )
-    {
-        // TODO: Respond to background update happening while app is open
-    }
-
-    private void OnActivated(object sender, AppActivationArguments e)
+    private void OnActivated(object? sender, AppActivationArguments e)
     {
         if (e.Data is Windows.ApplicationModel.Activation.LaunchActivatedEventArgs winArgs)
         {
@@ -116,7 +88,6 @@ public partial class App : Application
                 var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_mainWindow);
                 PInvoke.SetForegroundWindow(new Windows.Win32.Foundation.HWND(hWnd));
                 // Launched via secondary tile, parse out its arguments and do stuff with it
-                (_mainWindow as MainWindow)?.SetMessage($"Activated via: {winArgs.Arguments}");
             }
         }
     }
