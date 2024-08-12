@@ -17,13 +17,13 @@ public sealed class UpdateTilesTask : IBackgroundTask
     private CurrencyBeaconService _currencyBeaconService = null!;
     private ILogger _logger = null!;
 
-    public async void Run(IBackgroundTaskInstance taskInstance)
+    public async void Run(IBackgroundTaskInstance? taskInstance)
     {
-        var deferral = taskInstance.GetDeferral();
+        var deferral = taskInstance?.GetDeferral();
 
         if (!_initialized)
         {
-            _logger = await new Shared.Logging().GetLogger();
+            _logger = await new Logging().GetLogger();
             _fmpService = new FinancialModelingPrepService(_logger);
             _currencyBeaconService = new CurrencyBeaconService(_logger);
             _initialized = true;
@@ -69,7 +69,7 @@ public sealed class UpdateTilesTask : IBackgroundTask
 
         _logger.Information("---Background task update complete.---");
 
-        deferral.Complete();
+        deferral?.Complete();
     }
 
     private Task UpdateTile(string tileId, IStockQuote quote) =>

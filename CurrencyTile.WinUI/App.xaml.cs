@@ -64,6 +64,8 @@ public partial class App : Application
         _mainWindow = new MainWindow();
         _mainWindow.Activate();
 
+        _bgTaskService.UnregisterAll();
+
         var timerTaskRegistration = await _bgTaskService.GetOrRegisterTimerTask();
         var appTriggerTaskRegistration = await _bgTaskService.GetOrRegisterAppTriggerTask();
     }
