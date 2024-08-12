@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using CurrencyTile.Shared;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -16,6 +17,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
+using Serilog;
 using Windows.ApplicationModel.Background;
 using Windows.Win32;
 
@@ -32,6 +34,7 @@ public partial class App : Application
     private const string AppInstanceKey = "primary";
 
     private Window _mainWindow;
+    private ILogger _logger;
 
     /// <summary>
     /// Initializes the singleton application object.  This is the first line of authored code
@@ -52,6 +55,8 @@ public partial class App : Application
             Process.GetCurrentProcess().Kill();
             return;
         }
+
+        _logger = await new Logging().GetLogger();
 
         AppInstance.GetCurrent().Activated += OnActivated;
         _mainWindow = new MainWindow();

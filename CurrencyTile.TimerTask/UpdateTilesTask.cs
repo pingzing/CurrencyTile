@@ -3,6 +3,7 @@ using CurrencyTile.Shared;
 using CurrencyTile.TimerTask.CurrencyBeacon;
 using CurrencyTile.TimerTask.FinancialModelingPrep;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Serilog;
 using Windows.ApplicationModel.Background;
 using Windows.UI.Notifications;
 using Windows.UI.StartScreen;
@@ -11,48 +12,62 @@ namespace CurrencyTile.TimerTask;
 
 public sealed class UpdateTilesTask : IBackgroundTask
 {
-    private FinancialModelingPrepService _fmpService;
-    private CurrencyBeaconService _currencyBeaconService;
-
-    public UpdateTilesTask()
-    {
-        // TODO: Implement CurrencyBeacon API for exchange rates
-        _fmpService = new FinancialModelingPrepService();
-        _currencyBeaconService = new CurrencyBeaconService();
-    }
+    private bool _initialized = false;
+    private FinancialModelingPrepService _fmpService = null!;
+    private CurrencyBeaconService _currencyBeaconService = null!;
+    private ILogger _logger = null!;
 
     public async void Run(IBackgroundTaskInstance taskInstance)
     {
         var deferral = taskInstance.GetDeferral();
 
+        if (!_initialized)
+        {
+            _logger = await new Logging().GetLogger();
+            _fmpService = new FinancialModelingPrepService(_logger);
+            _currencyBeaconService = new CurrencyBeaconService(_logger);
+            _initialized = true;
+        }
+
+        _logger.Information("---Running background task...---");
+
         var allTiles = await SecondaryTile.FindAllAsync();
 
-        foreach (var tile in allTiles)
+        try
         {
-            TileArgsData tileArgs = TileSerializer.DeserializeTileArgs(tile.Arguments);
-            if (tileArgs is TileArgsQuote quoteArgs)
+            foreach (var tile in allTiles)
             {
-                IStockQuote? quote = await _fmpService.GetQuote(quoteArgs.Symbol);
-                if (quote != null)
+                TileArgsData tileArgs = TileSerializer.DeserializeTileArgs(tile.Arguments);
+                if (tileArgs is TileArgsQuote quoteArgs)
                 {
-                    await UpdateTile(tile.TileId, quote);
+                    IStockQuote? quote = await _fmpService.GetQuote(quoteArgs.Symbol);
+                    if (quote != null)
+                    {
+                        await UpdateTile(tile.TileId, quote);
+                    }
+                }
+                else if (tileArgs is TileArgsExchangeRate rateArgs)
+                {
+                    IExchangeRate? currToCurr = await _currencyBeaconService.GetExchangeRate(
+                        rateArgs.FromCurrency,
+                        rateArgs.ToCurrency
+                    );
+                    if (currToCurr != null)
+                    {
+                        await UpdateTile(tile.TileId, currToCurr);
+                    }
                 }
             }
-            else if (tileArgs is TileArgsExchangeRate rateArgs)
-            {
-                IExchangeRate? currToCurr = await _currencyBeaconService.GetExchangeRate(
-                    rateArgs.FromCurrency,
-                    rateArgs.ToCurrency
-                );
-                if (currToCurr != null)
-                {
-                    await UpdateTile(tile.TileId, currToCurr);
-                }
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("Failed to update tiles. Exception: {ex}", ex);
         }
 
         // Stuff the data into storage, so the foreground app can use it too, if it's open
         // use Windows.Storage.ApplicationData.Current because we're packaged, and can just stuff settings in there
+
+        _logger.Information("---Background task update complete.---");
 
         deferral.Complete();
     }
