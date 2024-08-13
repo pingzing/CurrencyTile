@@ -29,10 +29,20 @@
         
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <StackPanel x:Name="AddTilePanel" Orientation="Vertical">
+        <CommandBar x:Name="TopCommandBar" Grid.Row="0"
+                    VerticalContentAlignment="Center">
+            <CommandBar.Content>
+                <TextBlock Text="CurrencyTile" Margin="5 -10 0 0" Style="{StaticResource TitleTextBlockStyle}"/>
+            </CommandBar.Content>
+            <AppBarButton x:Name="RefreshButton" Icon="Refresh" Label="Refresh" Click="RefreshButton_Click" />
+        </CommandBar>
+
+        <StackPanel x:Name="AddTilePanel" Margin="10 10"  Grid.Row="1" Orientation="Vertical" Spacing="5">
+            <TextBlock x:Name="AddTileHeader" Text="Add a tile" Style="{StaticResource SubheaderTextBlockStyle}" />
             <StackPanel Orientation="Horizontal">
                 <TextBlock VerticalAlignment="Center" Text="Tile Type" Style="{StaticResource BaseTextBlockStyle}"/>
                 <ComboBox x:Name="TileTypeComboBox"            
@@ -42,18 +52,18 @@
                           SelectedIndex="0"/>
             </StackPanel>
             
-            <StackPanel x:Name="QuotePanel" Orientation="Vertical" 
+            <StackPanel x:Name="QuotePanel" Orientation="Vertical" Spacing="5"
                         Visibility="{x:Bind IsTileType(shared:TileKind.Quote, TileTypeComboBox.SelectedItem), Mode=OneWay}">
                 <TextBlock Text="Quote" Style="{StaticResource TitleTextBlockStyle}"/>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Quote:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
-                    <TextBox x:Name="QuoteSymbolTextBox" />
+                    <TextBox x:Name="QuoteSymbolTextBox" PlaceholderText="AAPL" />
                 </StackPanel>
                 <Button x:Name="SubmitQuoteButton" Content="Submit" HorizontalAlignment="Stretch"
                         Click="SubmitQuoteButton_Click"/>
             </StackPanel>
             
-            <StackPanel x:Name="ExchangeRatePanel" Orientation="Vertical"
+            <StackPanel x:Name="ExchangeRatePanel" Orientation="Vertical" Spacing="5"
                         Visibility="{x:Bind IsTileType(shared:TileKind.ExchangeRate, TileTypeComboBox.SelectedItem), Mode=OneWay}">
                 <TextBlock Text="Exchange Rate" Style="{StaticResource TitleTextBlockStyle}"/>
                 <Grid RowSpacing="5">
@@ -67,16 +77,24 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Text="From currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
-                    <TextBox Grid.Column="1" x:Name="ExchangeRateFromBox"/>
+                    <TextBox Grid.Column="1" x:Name="ExchangeRateFromBox" PlaceholderText="EUR"/>
 
                     <TextBlock Grid.Row="1" Text="To currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ExchangeRateToBox" />
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ExchangeRateToBox" PlaceholderText="USD" />
                 </Grid>
                 <Button x:Name="SubmitExchangeButton" Content="Submit" HorizontalAlignment="Stretch"
                         Click="SubmitExchangeButton_Click"/>
             </StackPanel>
             
         </StackPanel>
-        
+
+        <GridView x:Name="TilesPanel" Grid.Row="2">
+            <GridView.Header>
+                <TextBlock Text="Tiles" Style="{StaticResource SubheaderTextBlockStyle}"/>
+                <!--TODO: Add a second, smaller, conditionally-visible TextBlock
+                that only shows when the collection is empty to display "no items, sorry!"-->
+            </GridView.Header>
+        </GridView>
+
     </Grid>
 </Window>

@@ -27,7 +27,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public List<string> TileComboBoxOptions { get; } = ["Quote", "ExchangeRate"];
+    public List<string> TileComboBoxOptions { get; } = ["Quote", "Exchange Rate"];
 
     private ObservableCollection<TileInfo> _tiles = new();
     public ObservableCollection<TileInfo> Tiles
@@ -83,7 +83,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         TileKind given = selectedItem switch
         {
             "Quote" => TileKind.Quote,
-            "ExchangeRate" => TileKind.ExchangeRate,
+            "Exchange Rate" => TileKind.ExchangeRate,
             _ => throw new NotImplementedException()
         };
 
@@ -156,6 +156,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _updateTilesTask.Run(null);
         }
     }
+
+    private void RefreshButton_Click(object _, RoutedEventArgs __) => _updateTilesTask.Run(null);
 
     private void RaisePropertyChanged([CallerMemberName] string? propertyName = null)
     {
