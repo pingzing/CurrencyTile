@@ -33,7 +33,7 @@ public partial class App : Application
 {
     private const string AppInstanceKey = "primary";
 
-    private Window _mainWindow;
+    private Window _mainWindow = null!;
     private ILogger _logger = null!;
     private BackgroundTaskService _bgTaskService;
 
@@ -62,6 +62,7 @@ public partial class App : Application
 
         AppInstance.GetCurrent().Activated += OnActivated;
         _mainWindow = new MainWindow();
+        _mainWindow.AppWindow.Resize(new(500, 600));
         _mainWindow.Activate();
 
         _bgTaskService.UnregisterAll();

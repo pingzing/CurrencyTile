@@ -3,96 +3,126 @@
     x:Class="CurrencyTile.WinUI.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:CurrencyTile.WinUI"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:CurrencyTile.WinUI"
     xmlns:shared="using:CurrencyTile.Shared"
-    mc:Ignorable="d">
+    xmlns:conv="using:CurrencyTile.WinUI.Converters"
+    mc:Ignorable="d"
+    x:Name="_thisWindow">
 
-    <Grid Loaded="Grid_Loaded">
+    <Grid Loaded="Grid_Loaded" Background="{ThemeResource SolidBackgroundFillColorBaseAltBrush}">
 
         <Grid.Resources>
+            <conv:CollectionVisibilityConverter x:Key="CollectionVisibilityConverter"/>
             <!--Templates used for the tile display GridView-->
-            <DataTemplate x:Key="ExchangeRateDataTemplate">
-                
+            <DataTemplate x:Key="ExchangeRateDataTemplate" x:DataType="local:TileExchangeRateInfo">
+                <Border Width="100" Height="100" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                    <StackPanel Margin="5">
+                        <TextBlock Text="Exchange Rate" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                        <TextBlock>
+                            <Run Text="{x:Bind FromCurrency}"/>
+                            <Run Text="🠞"/>
+                            <Run Text="{x:Bind ToCurrency}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
             </DataTemplate>
 
-            <DataTemplate x:Key="QuoteDataTemplate">
-                
+            <DataTemplate x:Key="QuoteDataTemplate" x:DataType="local:TileQuoteInfo">
+                <Border Width="100" Height="100" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                    <StackPanel Margin="5">
+                        <TextBlock Text="Quote" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                        <TextBlock Text="{x:Bind Symbol}"/>
+                    </StackPanel>
+                </Border>
             </DataTemplate>
 
             <local:TileInfoDataTemplateSelector x:Key="TileInfoDataTemplateSelector"
                                                 ExchangeRate="{StaticResource ExchangeRateDataTemplate}"
                                                 Quote="{StaticResource QuoteDataTemplate}"/>
-
         </Grid.Resources>
-        
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <CommandBar x:Name="TopCommandBar" Grid.Row="0"
-                    VerticalContentAlignment="Center">
-            <CommandBar.Content>
-                <TextBlock Text="CurrencyTile" Margin="5 -10 0 0" Style="{StaticResource TitleTextBlockStyle}"/>
-            </CommandBar.Content>
-            <AppBarButton x:Name="RefreshButton" Icon="Refresh" Label="Refresh" Click="RefreshButton_Click" />
-        </CommandBar>
+        <TextBlock Text="CurrencyTile" Margin="10 10 0 0" Style="{StaticResource TitleLargeTextBlockStyle}"/>
 
-        <StackPanel x:Name="AddTilePanel" Margin="10 10"  Grid.Row="1" Orientation="Vertical" Spacing="5">
-            <TextBlock x:Name="AddTileHeader" Text="Add a tile" Style="{StaticResource SubheaderTextBlockStyle}" />
-            <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Text="Tile Type" Style="{StaticResource BaseTextBlockStyle}"/>
-                <ComboBox x:Name="TileTypeComboBox"            
-                          VerticalAlignment="Center"
-                          Margin="0 2 0 0"
-                          ItemsSource="{x:Bind TileComboBoxOptions, Mode=OneWay}"
-                          SelectedIndex="0"/>
-            </StackPanel>
-            
-            <StackPanel x:Name="QuotePanel" Orientation="Vertical" Spacing="5"
-                        Visibility="{x:Bind IsTileType(shared:TileKind.Quote, TileTypeComboBox.SelectedItem), Mode=OneWay}">
-                <TextBlock Text="Quote" Style="{StaticResource TitleTextBlockStyle}"/>
+        <Border Margin="10 10"  Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+            <StackPanel x:Name="AddTilePanel" Margin="10 10" Orientation="Vertical" Spacing="5">
+                <TextBlock x:Name="AddTileHeader" Text="Add a tile" Style="{StaticResource SubtitleTextBlockStyle}" />
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Quote:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
-                    <TextBox x:Name="QuoteSymbolTextBox" PlaceholderText="AAPL" />
+                    <TextBlock VerticalAlignment="Center" Text="Tile Type:" Style="{StaticResource BaseTextBlockStyle}"/>
+                    <ComboBox x:Name="TileTypeComboBox"            
+                              VerticalAlignment="Center"
+                              Margin="0 2 0 0"
+                              ItemsSource="{x:Bind TileComboBoxOptions, Mode=OneWay}"
+                              SelectedIndex="0"/>
                 </StackPanel>
-                <Button x:Name="SubmitQuoteButton" Content="Submit" HorizontalAlignment="Stretch"
-                        Click="SubmitQuoteButton_Click"/>
+
+                <StackPanel x:Name="QuotePanel" Orientation="Vertical" Spacing="5"
+                            Visibility="{x:Bind IsTileType(shared:TileKind.Quote, TileTypeComboBox.SelectedItem), Mode=OneWay}">
+                    <TextBlock Text="Quote" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Quote:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
+                        <TextBox x:Name="QuoteSymbolTextBox" PlaceholderText="AAPL" />
+                    </StackPanel>
+                    <Button x:Name="SubmitQuoteButton" Content="Submit" HorizontalAlignment="Stretch"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Click="SubmitQuoteButton_Click"/>
+                </StackPanel>
+
+                <StackPanel x:Name="ExchangeRatePanel" Orientation="Vertical" Spacing="5"
+                            Visibility="{x:Bind IsTileType(shared:TileKind.ExchangeRate, TileTypeComboBox.SelectedItem), Mode=OneWay}">
+                    <TextBlock Text="Exchange Rate" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                    <Grid RowSpacing="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="From currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
+                        <TextBox Grid.Column="1" x:Name="ExchangeRateFromBox" PlaceholderText="EUR"/>
+
+                        <TextBlock Grid.Row="1" Text="To currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="ExchangeRateToBox" PlaceholderText="USD" />
+                    </Grid>
+                    <Button x:Name="SubmitExchangeButton" Content="Submit" HorizontalAlignment="Stretch"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Click="SubmitExchangeButton_Click"/>
+                </StackPanel>
+
             </StackPanel>
-            
-            <StackPanel x:Name="ExchangeRatePanel" Orientation="Vertical" Spacing="5"
-                        Visibility="{x:Bind IsTileType(shared:TileKind.ExchangeRate, TileTypeComboBox.SelectedItem), Mode=OneWay}">
-                <TextBlock Text="Exchange Rate" Style="{StaticResource TitleTextBlockStyle}"/>
-                <Grid RowSpacing="5">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+        </Border>
 
-                    <TextBlock Text="From currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
-                    <TextBox Grid.Column="1" x:Name="ExchangeRateFromBox" PlaceholderText="EUR"/>
-
-                    <TextBlock Grid.Row="1" Text="To currency:" VerticalAlignment="Center" Style="{StaticResource BaseTextBlockStyle}"/>
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ExchangeRateToBox" PlaceholderText="USD" />
-                </Grid>
-                <Button x:Name="SubmitExchangeButton" Content="Submit" HorizontalAlignment="Stretch"
-                        Click="SubmitExchangeButton_Click"/>
-            </StackPanel>
-            
-        </StackPanel>
-
-        <GridView x:Name="TilesPanel" Grid.Row="2">
+        <GridView x:Name="TilesPanel" Margin="10 10" Grid.Row="2"
+                  ItemsSource="{x:Bind Tiles, Mode=OneWay}"
+                  ItemTemplateSelector="{StaticResource TileInfoDataTemplateSelector}"
+                  SelectionMode="Single">
+            <!--TODO: Allow a context menu when poking a tile to unpin or refresh it-->
             <GridView.Header>
-                <TextBlock Text="Tiles" Style="{StaticResource SubheaderTextBlockStyle}"/>
-                <!--TODO: Add a second, smaller, conditionally-visible TextBlock
-                that only shows when the collection is empty to display "no items, sorry!"-->
+                <Grid RowDefinitions="Auto, Auto"
+                      ColumnDefinitions="*, Auto">
+                    <TextBlock Text="Tiles" Style="{StaticResource SubheaderTextBlockStyle}"/>
+                    <CommandBar x:Name="TopCommandBar" Grid.Row="0" Grid.Column="1">
+                        <AppBarButton x:Name="RefreshButton" Icon="Refresh" Label="Refresh" Click="RefreshButton_Click" />
+                    </CommandBar>
+                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" 
+                               DataContext="{Binding ElementName=_thisWindow}"
+                               Text="Looks like there aren't any tiles yet!"
+                               Foreground="{ThemeResource TextFillColorDisabledBrush}"
+                               HorizontalAlignment="Center"
+                               HorizontalTextAlignment="Center"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                               Visibility="{Binding Tiles, Converter={StaticResource CollectionVisibilityConverter}, ConverterParameter=True}"/>
+                </Grid>
             </GridView.Header>
         </GridView>
 
