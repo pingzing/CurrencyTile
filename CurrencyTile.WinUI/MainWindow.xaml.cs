@@ -2,15 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Drawing.Printing;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using CurrencyTile.Shared;
 using CurrencyTile.TimerTask;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Serilog;
 using Windows.ApplicationModel.Background;
+using Windows.UI;
 using Windows.UI.StartScreen;
+using Windows.UI.ViewManagement;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.Controls;
+using WinRT.Interop;
 
 namespace CurrencyTile.WinUI;
 
@@ -43,10 +53,39 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private Color _inactiveCaptionForegroundColor = Color.FromArgb(255, 133, 133, 133);
+
     public MainWindow()
     {
         _updateTilesTask = new UpdateTilesTask();
         InitializeComponent();
+
+        // Acrylic title bar
+        ExtendsContentIntoTitleBar = true;
+        Activated += MainWindow_Activated;
+        var titleBar = AppWindow.TitleBar;
+        titleBar.ExtendsContentIntoTitleBar = true;
+        titleBar.ButtonBackgroundColor = Colors.Transparent;
+        titleBar.ButtonForegroundColor = Colors.White;
+        titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        titleBar.ButtonInactiveForegroundColor = _inactiveCaptionForegroundColor;
+    }
+
+    private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
+    {
+        // Force the top row of pixels to be inset so that the
+        // top border is visible even with ExtendsContentIntoTitleBar true.
+        var handle = WindowNative.GetWindowHandle(this);
+        MARGINS margins =
+            new()
+            {
+                cxLeftWidth = 0,
+                cxRightWidth = 0,
+                cyBottomHeight = 0,
+                cyTopHeight = 2
+            };
+
+        PInvoke.DwmExtendFrameIntoClientArea(new HWND(handle), in margins);
     }
 
     // Window doesn't have a loaded event, so let's wait until our root UI control--this Grid--is loaded

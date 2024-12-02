@@ -1,7 +1,8 @@
 {
   "profiles": {
     "CurrencyTile.WinUI (Package)": {
-      "commandName": "MsixPackage"
+      "commandName": "MsixPackage",
+      "alwaysReinstallApp": false
     },
     "CurrencyTile.WinUI (Unpackaged)": {
       "commandName": "Project"
