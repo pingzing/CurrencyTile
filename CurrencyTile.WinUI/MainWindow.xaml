@@ -9,6 +9,8 @@
     xmlns:shared="using:CurrencyTile.Shared"
     xmlns:conv="using:CurrencyTile.WinUI.Converters"
     mc:Ignorable="d"
+    
+    Title="Currency Tile"
     x:Name="_thisWindow">
     <Window.SystemBackdrop>
         <DesktopAcrylicBackdrop/>
